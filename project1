@@ -73,3 +73,11 @@ sumTwave =sum(t_wave,1);
 index = find(sumTwave>=10^3);
 t_wave_corr = t_wave(:,index);
 plot(l,t_wave_corr)
+
+ACI = zeros(1,709);
+
+for i = 1 : length(t_wave_corr)
+    ACI(i) = sum(t_wave_corr(:,i).* median_t_wave)./sum(abs(median_t_wave).^2);
+end
+
+ACI_diff = abs(ACI - 1);    
