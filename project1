@@ -1,75 +1,74 @@
-clear all; 
+clear all; close all;
 load('AlternansData.mat')
 % Fs = 1000 Hz, amplitude in micro Volts.
 %% Detrend
-[p,s,mu] = polyfit((1:numel(ecg_h)),ecg_h,6);
+[p,s,mu] = polyfit((1:numel(ecg_h)),ecg_h,3);
 f_y = polyval(p,(1:numel(ecg_h)),[],mu);
 ecgh = ecg_h - f_y; % Detrend data
+%% Plot t waves
+figure 
+hold on 
+for i = 1 : length(th)
+    plot(ecgh(twavesIndex(i,:)))
+end
+%% Identifying the t waves
+close all;
 
-%% Peak detection for smoothed data
-[peaksd,locd] = findpeaks(ecgh,'MinPeakHeight',700,'MinPeakDistance',120); %Typ alla toppar,kan diskutera hur det påverkar resultatet att inta alla kommer med!
-% locd_Twave = locd(ecgh(locd) > 120 & ecgh(locd) < 650);
- 
+th = t_h(1:699);
+lengthtwave = [50:450];
+twavesIndex = repmat(lengthtwave, numel(th),1);
+thMatrix = repmat(th, 1, numel(lengthtwave));
+twavesIndex = twavesIndex + thMatrix;
+
+peaks = zeros(1,length(th));
+locs = zeros(1,length(th));
+
+t_wave = zeros(length(th), numel(lengthtwave));
+for i = 1 : numel(lengthtwave)
+    t_wave(i,:) = ecgh(twavesIndex(i,:));
+end
+    
+for i = 1 : numel(th)
+   [peak loc] = findpeaks(ecgh(twavesIndex(i,:)),'MinPeakProminence',50);
+   idx = find(max(peak));
+   locs(i) = twavesIndex(i,loc(idx));
+   peaks(i) = ecgh(locs(i));
+end
+%% Plot t wave peaks
 figure
 hold on
 plot(ecgh)
-% plot(locd_Twave,ecgh(locd_Twave),'rs','MarkerFaceColor','r')
-plot(locd,ecgh(locd),'rs','MarkerFaceColor','r')
+plot(locs,ecgh(locs),'rs','MarkerFaceColor','r')
 legend('ECG Signal','Twave Peaks')
 xlabel('Samples'); ylabel('Voltage(microV)')
 
-
-%% T-wave detection
-
-t_start = locd+100; % startpunkterna för t-wave
-
-% t_wave = ecg_h(t_start:t_start+200); 
-
-t_wave = zeros(201,709);
-for(i = 1 : 709)
-    t_wave(:,i) = ecgh(t_start(i):t_start(i)+200);
-end
-
-% figure
-% plot(t_wave(:,1))
-
 %% mean T-wave 
 
-mean_t_wave = mean(t_wave,2);
+mean_t_wave = mean(t_wave, 1);
 
 figure
 plot(mean_t_wave)
 
 %% median T_wave
 
-median_t_wave = median(t_wave,2);
+median_t_wave = median(t_wave);
 
 figure
 plot(median_t_wave);
 hold on 
 plot(mean_t_wave)
 
-%% Finding T_wave
-% R = xcorr(ecgh,mean_t_wave');
-% t = -length(ecgh)+1:1:length(ecgh)-1;
-% figure
-% plot(t,R)
-% close
-% 
-% [maxCorr,idx] = findpeaks(R,'minPeakHeight',10^7,'minPeakDistance',300);
-% idx = idx - 430000;
-%% Confirming T_wave
-% confirmedTwave = zeros(201,699);
-% for i=1:length(maxCorr)
-%     confirmedTwave(:,i) = ecgh(idx(i):idx(i)+200);
-% end
-% l = [1:1:201];
-% for i = 1:length(maxCorr)
-%     hold on
-%     plot(l,confirmedTwave(:,i));
-% end
-%% Removing outliers
-sumTwave =sum(t_wave,1);
-index = find(sumTwave>=10^3);
-t_wave_corr = t_wave(:,index);
-plot(l,t_wave_corr)
+
+%% Meh 
+ACI = zeros(1,699);
+
+for i = 1 : 699
+    ACI(i) = sum(t_wave(i,:).* mean_t_wave)./sum(abs(mean_t_wave).^2);
+end
+
+ACI_diff = abs(ACI - 1);    
+
+
+
+
+
